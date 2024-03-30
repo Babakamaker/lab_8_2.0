@@ -14,8 +14,8 @@ const {data, pending} = await useLazyAsyncData<any>(
 
 let products = data.value.products;
 
-const page = ref(2)
-const pageCount = 4
+const page = ref(1)
+const pageCount = 8
 
 
 const q = ref('')
@@ -34,15 +34,19 @@ const rows = computed(() => {
   })
 })
 
+const getRatingColor = (rating: number) => {
+  return rating < 4.5 ? 'red' : 'green'
+}
 </script>
 
 <template>
   <div class="">
-    <div class="flex px-3 py-3.5 border-b border-gray-200 dark:border-gray-700 ">
+    <div class="flex  px-3 py-3.5 border-b border-gray-200 dark:border-gray-700 ">
       <UInput v-model="q" placeholder="Filter products..." />
     </div>
 
-    <UTable :rows="rows" :columns="columns" >
+    <UTable :rows="rows" :columns="columns" class="">
+
 
       </UTable>
 
