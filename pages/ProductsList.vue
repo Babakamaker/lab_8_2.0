@@ -7,7 +7,7 @@ const columns = [
   { key: 'rating', label: 'Оцінка', sortable: true },
   { key: 'brand', label: 'Бренд', sortable: true },
   { key: 'category', label: 'Категорія', sortable: true },
-  { key: 'thumbnail', label: 'Фото' }
+  { key: 'thumbnail', label: 'Фото', sortable: true}
 ];
 const {data, pending} = await useLazyAsyncData<any>(
     'products', () => $fetch('https://dummyjson.com/products'))
@@ -18,7 +18,39 @@ const page = ref(1)
 const pageCount = 5
 
 const q = ref('')
+
+const sort = ref({ column: 'title', direction: 'asc' as const })
+const sortedRows = computed(() => {
+  const sortedProducts = [...products]
+  const { column, direction } = sort.value
+
+  if (column && direction) {
+    sortedProducts.sort((a, b) => {
+      const aValue = a[column]
+      const bValue = b[column]
+      if (aValue < bValue) return direction === 'asc' ? -1 : 1
+      if (aValue > bValue) return direction === 'asc' ? 1 : -1
+      return 0
+    })
+  }
+  console.log(sortedProducts)
+  return sortedProducts
+});
 const rows = computed(() => {
+  let filteredProducts = [...sortedRows.value]
+
+  if (q.value) {
+    filteredProducts = filteredProducts.filter(product => {
+      return Object.values(product).some(value => {
+        return String(value).toLowerCase().includes(q.value.toLowerCase())
+      })
+    })
+  }
+  const startIndex = (page.value - 1) * pageCount
+  const endIndex = startIndex + pageCount
+  return filteredProducts.slice(startIndex, endIndex)
+})
+const filteredRows = computed(() => {
   if (!q.value) {
     return products.slice((page.value - 1) * pageCount, (page.value) * pageCount)
 
@@ -30,10 +62,6 @@ const rows = computed(() => {
     })
   })
 })
-
-const getRatingColor = (rating: number) => {
-  return rating < 4.5 ? 'red' : 'green'
-}
 </script>
 
 <template>
@@ -43,7 +71,7 @@ const getRatingColor = (rating: number) => {
       <UInput v-model="q" placeholder="Filter products..." />
     </div>
 
-    <UTable :rows="rows" :columns="columns" class="max-w-full h-auto flex-col flex">
+    <UTable class="w-full" v-model:sort="sort" sort-mode="manual" :rows="rows" :columns="columns">
       <template #description-data="{ row }">
         <span class=" overflow-x-auto max-w-[200px]">{{ row.description }}</span>
       </template>
@@ -51,7 +79,7 @@ const getRatingColor = (rating: number) => {
         <span :class="row.rating < 4.5 ? 'text-red-600' : 'text-green-600' ">{{ row.rating }}</span>
       </template>
       <template #thumbnail-data="{ row }">
-        <img :src="row.thumbnail" alt="Thumbnail" class=" w-[100px] h-[100px]" />
+        <img class="w-[100px] h-[100px]"  :src="row.thumbnail" alt="Thumbnail"/>
       </template>
 
       </UTable>
