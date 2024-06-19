@@ -17,32 +17,27 @@
         <template #published-at-data="{ row }">
           <span>{{ row.published_at }}</span>
         </template>
-        <template #actions-data="{ row }">
-          <UDropdown :items="items(row)">
-            <UButton color="gray" variant="ghost" icon="i-heroicons-ellipsis-horizontal-20-solid"/>
-          </UDropdown>
-        </template>
+
       </UTable>
     </div>
 
     <div class="flex justify-end">
-      <UPagination v-model="page" :page-count="pageCount" :total="totalItems"/>
+      <UPagination v-model="page" :page-count="pageCount" :total="totalItems" />
     </div>
   </div>
 </template>
 
 <script setup>
-import {ref, computed, onMounted} from 'vue';
-import {useFetch} from '#app';
-import {UButton, UInput, UTable, UDropdown, UPagination} from '@nuxt/ui';
+import { ref, computed } from 'vue';
+import { useFetch } from '#app';
 
 const columns = [
-  {key: 'id', label: '#'},
-  {key: 'user-name', label: 'Автор'},
-  {key: 'category-title', label: 'Категорія'},
-  {key: 'title', label: 'Заголовок'},
-  {key: 'published-at', label: 'Дата публікації'},
-  {key: 'actions', label: 'Дії'}
+  { key: 'id', label: '#' },
+  { key: 'user-name', label: 'Автор' },
+  { key: 'category-title', label: 'Категорія' },
+  { key: 'title', label: 'Заголовок' },
+  { key: 'published-at', label: 'Дата публікації' },
+  { key: 'actions', label: 'Дії' }
 ];
 
 const page = ref(1);
@@ -51,8 +46,9 @@ const q = ref('');
 const totalItems = ref(0);
 const posts = ref([]);
 
+// Fetch posts from Laravel API
 const fetchPosts = async () => {
-  const {data, error} = await useFetch('http://127.0.0.1:8000/api/blog/posts');
+  const { data, error } = await useFetch('http://127.0.0.1:8000/api/blog/posts');
   if (error.value) {
     console.error('Error fetching posts:', error.value);
     return;
@@ -62,61 +58,17 @@ const fetchPosts = async () => {
 };
 
 const filteredPosts = computed(() => {
-  let filtered = posts.value;
-
-  if (q.value) {
-    filtered = filtered.filter((post) => {
-      return Object.values(post).some((value) => {
-        return String(value).toLowerCase().includes(q.value.toLowerCase());
-      });
-    });
+  if (!q.value) {
+    return posts.value.slice((page.value - 1) * rowsPerPage, page.value * rowsPerPage);
   }
-
-  const start = (page.value - 1) * rowsPerPage;
-  const end = start + rowsPerPage;
-  return filtered.slice(start, end);
+  return posts.value.filter((post) => {
+    return Object.values(post).some((value) => {
+      return String(value).toLowerCase().includes(q.value.toLowerCase());
+    });
+  });
 });
 
-const pageCount = computed(() => {
-  return Math.ceil(totalItems.value / rowsPerPage);
-});
-
-const goToAddPostPage = () => {
-  window.location.href = '/admin/blog/posts/create';
-};
-
-const editPost = (id) => {
-  window.location.href = `/BlogPostEdit/${id}`;
-};
-
-const deletePost = async (id) => {
-  try {
-    const response = await fetch(`http://127.0.0.1:8000/api/blog/posts/${id}`, {
-      method: 'DELETE'
-    });
-    if (!response.ok) {
-      throw new Error('Failed to delete post');
-    }
-    await fetchPosts();
-  } catch (error) {
-    console.error('Error deleting post:', error);
-  }
-};
-
-const items = (row) => [
-  [{
-    label: 'Редагувати',
-    icon: 'i-heroicons-pencil-square-20-solid',
-    click: () => editPost(row.id)
-  }],
-  [{
-    label: 'Видалити',
-    icon: 'i-heroicons-trash-20-solid',
-    click: () => deletePost(row.id)
-  }]
-];
-
-onMounted(fetchPosts);
+fetchPosts();
 </script>
 
 <style scoped>

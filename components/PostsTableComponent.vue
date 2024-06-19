@@ -1,82 +1,92 @@
 <template>
-  <div class="container mx-auto p-4">
-    <UButton @click="goToAddPostPage" class="mb-4">Додати</UButton>
-    <UInput v-model="q" placeholder="Filter posts..." class="mb-4" />
-
-    <div class="overflow-x-auto">
-      <UTable :rows="filteredPosts" :columns="columns" class="w-full whitespace-nowrap bg-white rounded-lg shadow-lg mb-4">
-        <template #user-name-data="{ row }">
-          <span>{{ row.user.name }}</span>
-        </template>
-        <template #category-title-data="{ row }">
-          <span>{{ row.category.title }}</span>
-        </template>
-        <template #title-data="{ row }">
-          <router-link :to="`/BlogPost/${row.id}`">{{ row.title }}</router-link>
-        </template>
-        <template #published-at-data="{ row }">
-          <span>{{ row.published_at }}</span>
-        </template>
-      </UTable>
-    </div>
-
-    <div class="flex justify-end">
-      <UPagination v-model="page" :page-count="pageCount" :total="totalItems" />
+  <div class="container">
+    <div class="flex justify-center">
+      <div class="w-full">
+        <nav class="navbar bg-gray-600">
+          <a href="/admin/blog/posts/create">Додати</a>
+        </nav>
+        <div class="card">
+          <div class="card-body">
+            <table class="table table-auto">
+              <thead>
+              <tr>
+                <th>#</th>
+                <th>Автор</th>
+                <th>Категорія</th>
+                <th>Заголовок</th>
+                <th>Дата публікації</th>
+              </tr>
+              </thead>
+              <tbody>
+              <tr v-for="post in posts" :key="post.id">
+                <td>{{ post.id }}</td>
+                <td>{{ post.user?.name || 'Unknown' }}</td>
+                <td>{{ post.category?.title || 'Unknown' }}</td>
+                <td><a :href="'/admin/blog/posts/' + post.id + '/edit'">{{ post.title }}</a></td>
+                <td>{{ post.published_at || 'Unknown' }}</td>
+              </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
-<script setup>
-import { ref, computed, onMounted } from 'vue';
-import { useFetch } from '#app';
+<script setup lang="ts">
+import { ref, onMounted } from 'vue';
 
-const columns = [
-  { key: 'id', label: '#' },
-  { key: 'user-name', label: 'Автор' },
-  { key: 'category-title', label: 'Категорія' },
-  { key: 'title', label: 'Заголовок' },
-  { key: 'published-at', label: 'Дата публікації' },
-];
+interface Post {
+  id: number;
+  title: string;
+  published_at?: string;
+  user?: {
+    name: string;
+  };
+  category?: {
+    title: string;
+  };
+}
 
-const page = ref(1);
-const rowsPerPage = 10;
-const q = ref('');
-const totalItems = ref(0);
-const posts = ref([]);
+const posts = ref<Post[]>([]); // Initialize posts as a ref with an empty array
 
-const fetchPosts = async () => {
-  const { data, error } = await useFetch('http://127.0.0.1:8000/api/blog/posts');
-  if (error.value) {
-    console.error('Error fetching posts:', error.value);
-    return;
+const getPosts = async () => {
+  try {
+    const response = await fetch('http://localhost:8000/api/blog/posts');
+    const data = await response.json();
+    console.log(data);
+    posts.value = data; // Update the posts array with fetched data
+  } catch (error) {
+    console.error('Error fetching posts:', error);
   }
-  posts.value = data.value || [];
-  totalItems.value = posts.value.length;
 };
 
-const filteredPosts = computed(() => {
-  let filtered = posts.value;
-
-  if (q.value) {
-    filtered = filtered.filter((post) => {
-      return Object.values(post).some((value) => {
-        return String(value).toLowerCase().includes(q.value.toLowerCase());
-      });
-    });
-  }
-
-  const start = (page.value - 1) * rowsPerPage;
-  const end = start + rowsPerPage;
-  return filtered.slice(start, end);
-});
-
-const goToAddPostPage = () => {
-  window.location.href = '/admin/blog/posts/create';
-};
-
-onMounted(fetchPosts);
+onMounted(getPosts); // Call getPosts function when the component is mounted
 </script>
 
 <style scoped>
-/* Additional styling can be added here if needed */
+/* Add your scoped styles here */
+.container {
+  padding: 1rem;
+}
+.navbar {
+  margin-bottom: 1rem;
+}
+.card {
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+.card-body {
+  padding: 1rem;
+}
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.table th, .table td {
+  padding: 0.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
 </style>

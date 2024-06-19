@@ -1,7 +1,6 @@
 <template>
   <div>
     <PostsTableComponentUI />
-
   </div>
 </template>
 
